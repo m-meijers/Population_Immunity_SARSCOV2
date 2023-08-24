@@ -1,7 +1,9 @@
+import sys
+sys.path.insert(0,"..")
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
-from flai.util.Time import Time
+from util.time import Time
 import json
 from matplotlib.lines import Line2D
 from scipy.interpolate import interp1d
@@ -27,6 +29,38 @@ def clean_vac(times,vac_vec):
 	v_interp = v_func(times)
 	return v_interp
 
+
+WHOlabels = {
+'1C.2A.3A.4B':'BETA',
+'1C.2A.3A.4A':'EPSILON',
+'1C.2A.3A.4C':'IOTA',
+'1C.2A.3I':'MU',
+'1C.2B.3D':'ALPHA',
+'1C.2B.3J':'OMICRON',
+'1C.2B.3J.4D':'BA.1',
+'1C.2B.3J.4D.5A':'BA.1.1',
+'1C.2B.3J.4E':'BA.2',
+'1C.2B.3J.4E.5B':'BA.2.12.1',
+'1C.2B.3J.4E.5L':'BJ.1',
+'1C.2B.3J.4E.5C':'BA.2.75',
+'1C.2B.3J.4E.5C.6A':'BA.2.75.2',
+'1C.2B.3J.4E.5C.6E':'BM.1.1',
+'1C.2B.3J.4E.5C.6F':'BN.1',
+'1C.2B.3J.4F':'BA.4',
+'1C.2B.3J.4F.5D':'BA.4.6',
+'1C.2B.3J.4G':'BA.5',
+'1C.2B.3J.4G.5K':'BA.5.9',
+'1C.2B.3J.4G.5E':'BF.7',
+'1C.2B.3J.4G.5F':'BQ.1',
+'1C.2B.3J.4G.5F.6B':'BQ.1.1',
+'1C.2D.3F':'DELTA',
+'1C.2B.3G':'GAMMA',
+'1C.2B.3J.4E.5N':'XBB',
+'1C.2B.3J.4E.5N.6J':'XBB.1.5',
+'1C.2B.3J.4E.5C.6I':'CH.1',
+'1C.2B.3J.4E.5C.6I.7C':'CH.1.1'}
+pango2flupredict = {a:b for b,a in WHOlabels.items()}
+
 VOCs = ['ALPHA','BETA','GAMMA','DELTA','EPSILON','KAPPA','LAMBDA']
 colors = ['b','g','r','c','m','y','k','lime','salmon','lime']
 
@@ -36,23 +70,20 @@ min_count = 500
 
 country_min_count = defaultdict(lambda: [])
 print("=====================Alpha - Delta ============================")
-files = glob.glob("../DATA/2022_04_26/freq_traj_*")
+country_min_count = defaultdict(lambda: [])
+files = glob.glob("../DATA/2023_04_01/freq_traj_*")
 countries = [f.split("_")[-1][:-5] for f in files]
-meta_df = pd.read_csv("../DATA/2022_04_26/clean_data.txt",sep='\t',index_col=False)
-countries.pop(countries.index("WALES"))
-countries.pop(countries.index("NORTHERNIRELAND"))
-countries.pop(countries.index("SCOTLAND"))
-countries.pop(countries.index("ENGLAND")) #No mRNA vaccine in the UK
+meta_df = pd.read_csv("../DATA/clean_data.txt",sep='\t',index_col=False)
 country2max_recov =   defaultdict(lambda:defaultdict(lambda: defaultdict(lambda: defaultdict())))
-
 country2immuno2time = defaultdict(lambda:defaultdict(lambda:defaultdict(lambda: 0.0)))
+
 lines = []
 for country in countries:
-	with open("../DATA/2022_04_26/freq_traj_" + country.upper() + ".json",'r') as f:
+	with open("../DATA/2023_04_01/freq_traj_" + country.upper() + ".json",'r') as f:
 		freq_traj = json.load(f)
-	with open("../DATA/2022_04_26/multiplicities_" + country.upper() + ".json",'r') as f:
+	with open("../DATA/2023_04_01/multiplicities_" + country.upper() + ".json",'r') as f:
 		counts = json.load(f)
-	with open("../DATA/2022_04_26/multiplicities_Z_" + country.upper() + ".json",'r') as f:
+	with open("../DATA/2023_04_01/multiplicities_Z_" + country.upper() + ".json",'r') as f:
 		Z = json.load(f)
 	meta_country= meta_df.loc[list(meta_df['location'] == country[0] + country[1:].lower())]
 	if len(country) <= 3:
@@ -60,9 +91,9 @@ for country in countries:
 	meta_country.index = meta_country['FLAI_time']
 
 
-	if max(list(freq_traj['ALPHA'].values())) > 0.5 and max(list(freq_traj['DELTA'].values())) > 0.5:
-		dates_delta = list(counts['DELTA'].keys())
-		dates_alpha = list(counts['ALPHA'].keys())
+	if max(list(freq_traj[pango2flupredict['ALPHA']].values())) > 0.5 and max(list(freq_traj[pango2flupredict['DELTA']].values())) > 0.5:
+		dates_delta = [t for t,x in freq_traj[pango2flupredict['DELTA']].items() if x > 0.01]
+		dates_alpha = list(counts[pango2flupredict['ALPHA']].keys())
 		dates_delta = [int(a) for a in dates_delta]
 		dates_alpha = [int(a) for a in dates_alpha]
 		dates_delta = sorted(dates_delta)
@@ -83,8 +114,8 @@ for country in countries:
 		tmin = min(set(dates_delta).intersection(set(dates_alpha)))
 		tmax = max(set(dates_delta).intersection(set(dates_alpha)))
 		t_range = np.arange(tmin,tmax)
-		alpha_count = [int(np.exp(counts['ALPHA'][str(a)])) for a in t_range]
-		delta_count = [int(np.exp(counts['DELTA'][str(a)])) for a in t_range]
+		alpha_count = [int(np.exp(counts[pango2flupredict['ALPHA']][str(a)])) for a in t_range]
+		delta_count = [int(np.exp(counts[pango2flupredict['DELTA']][str(a)])) for a in t_range]
 		N_tot = np.array(alpha_count) + np.array(delta_count)
 		check = 'not_okay'
 		for t in t_range:
@@ -104,7 +135,7 @@ for country in countries:
 		tmax = tmaxnew
 		t_range= np.arange(tmin,tmax)
 
-		Ztot =np.array([int(np.exp(Z[str(t)])) for t in t_range])
+		Ztot = np.array([int(np.exp(Z[str(int(t))])) for t in np.arange(Time.dateToCoordinate("2021-04-01"), Time.dateToCoordinate("2022-09-01"))])
 		country_min_count[country].append(min(Ztot))
 		if np.sum(Ztot > min_count) != len(Ztot):
 			print(f"{country} drops due to insufficient count")
@@ -113,13 +144,13 @@ for country in countries:
 		x_alpha = []
 		x_delta = []
 		for t in list(meta_country.index):
-			if str(t) in freq_traj['DELTA'].keys():
-				x_delta.append(freq_traj['DELTA'][str(t)])
+			if str(t) in freq_traj[pango2flupredict['DELTA']].keys():
+				x_delta.append(freq_traj[pango2flupredict['DELTA']][str(t)])
 			else:
 				x_delta.append(0.0)
 
-			if str(t) in freq_traj['ALPHA'].keys():
-				x_alpha.append(freq_traj['ALPHA'][str(t)])
+			if str(t) in freq_traj[pango2flupredict['ALPHA']].keys():
+				x_alpha.append(freq_traj[pango2flupredict['ALPHA']][str(t)])
 			else:
 				x_alpha.append(0.0)
 		freq_delta = np.array(x_delta)
@@ -151,8 +182,8 @@ for country in countries:
 		vaccinated = clean_vac(t_range,vaccinated)
 		country2immuno2time[country]['VAC'] = {t_range[i] : vaccinated[i] for i in range(len(t_range))}
 		
-		alpha_count = [int(np.exp(counts['ALPHA'][str(a)])) for a in t_range]
-		delta_count = [int(np.exp(counts['DELTA'][str(a)])) for a in t_range]
+		alpha_count = [int(np.exp(counts[pango2flupredict['ALPHA']][str(a)])) for a in t_range]
+		delta_count = [int(np.exp(counts[pango2flupredict['DELTA']][str(a)])) for a in t_range]
 
 		t1 = 0 
 		t2 = int(t1 + dt)
@@ -191,13 +222,13 @@ for country in countries:
 			t_range_here = np.arange(t1 + tmin,t2 + tmin)
 			
 			
-			if str(FLAI_time) in freq_traj['DELTA'].keys():
-				x_delta = freq_traj['DELTA'][str(FLAI_time)]
+			if str(FLAI_time) in freq_traj[pango2flupredict['DELTA']].keys():
+				x_delta = freq_traj[pango2flupredict['DELTA']][str(FLAI_time)]
 			else:
 				x_delta = 0.0
 
-			if str(FLAI_time) in freq_traj['ALPHA'].keys():
-				x_alpha = freq_traj['ALPHA'][str(FLAI_time)]
+			if str(FLAI_time) in freq_traj[pango2flupredict['ALPHA']].keys():
+				x_alpha = freq_traj[pango2flupredict['ALPHA']][str(FLAI_time)]
 			else:
 				x_alpha = 0.0
 			freq_wt = 1 - x_delta - x_alpha

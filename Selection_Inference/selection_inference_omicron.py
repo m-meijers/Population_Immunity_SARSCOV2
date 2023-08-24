@@ -1,7 +1,9 @@
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
-from flai.util.Time import Time
+sys.path.insert(0,"..")
+from util.time import Time
+from util.functions import Functions as util_functions
 import json
 from matplotlib.lines import Line2D
 from scipy.interpolate import interp1d
@@ -30,33 +32,64 @@ def clean_vac(times,vac_vec):
 VOCs = ['ALPHA','BETA','GAMMA','DELTA','EPSILON','KAPPA','LAMBDA']
 colors = ['b','g','r','c','m','y','k','lime','salmon','lime']
 
+WHOlabels = {
+'1C.2A.3A.4B':'BETA',
+'1C.2A.3A.4A':'EPSILON',
+'1C.2A.3A.4C':'IOTA',
+'1C.2A.3I':'MU',
+'1C.2B.3D':'ALPHA',
+'1C.2B.3J':'OMICRON',
+'1C.2B.3J.4D':'BA.1',
+'1C.2B.3J.4D.5A':'BA.1.1',
+'1C.2B.3J.4E':'BA.2',
+'1C.2B.3J.4E.5B':'BA.2.12.1',
+'1C.2B.3J.4E.5L':'BJ.1',
+'1C.2B.3J.4E.5C':'BA.2.75',
+'1C.2B.3J.4E.5C.6A':'BA.2.75.2',
+'1C.2B.3J.4E.5C.6E':'BM.1.1',
+'1C.2B.3J.4E.5C.6F':'BN.1',
+'1C.2B.3J.4F':'BA.4',
+'1C.2B.3J.4F.5D':'BA.4.6',
+'1C.2B.3J.4G':'BA.5',
+'1C.2B.3J.4G.5K':'BA.5.9',
+'1C.2B.3J.4G.5E':'BF.7',
+'1C.2B.3J.4G.5F':'BQ.1',
+'1C.2B.3J.4G.5F.6B':'BQ.1.1',
+'1C.2D.3F':'DELTA',
+'1C.2B.3G':'GAMMA',
+'1C.2B.3J.4E.5N':'XBB',
+'1C.2B.3J.4E.5N.6J':'XBB.1.5',
+'1C.2B.3J.4E.5C.6I':'CH.1',
+'1C.2B.3J.4E.5C.6I.7C':'CH.1.1'}
+pango2flupredict = {a:b for b,a in WHOlabels.items()}
+
 x_limit = 0.01
 
 country_min_count = defaultdict(lambda: [])
-files = glob.glob("../DATA/2022_04_26/freq_traj_*")
+files = glob.glob("../DATA/2023_04_01/freq_traj_*")
 countries = [f.split("_")[-1][:-5] for f in files]
-meta_df = pd.read_csv("../DATA/2022_04_26/clean_data.txt",sep='\t',index_col=False)
-countries.pop(countries.index("WALES"))
-countries.pop(countries.index("NORTHERNIRELAND"))
-countries.pop(countries.index("SCOTLAND"))
-countries.pop(countries.index("ENGLAND")) #No mRNA vaccine in the UK
-
+meta_df = pd.read_csv("../DATA/clean_data.txt",sep='\t',index_col=False)
 print("=====================Delta - Omicron ============================")
-countries.pop(countries.index("ICELAND"))
-countries.pop(countries.index("LUXEMBOURG"))
-countries.pop(countries.index("SLOVAKIA")) #incomplete data
-countries.pop(countries.index("SOUTHKOREA")) #incomplete data
-
 dt = 30.0
 min_count = 500
 country2immuno2time = defaultdict(lambda:defaultdict(lambda:defaultdict(lambda: 0.0)))
+country2recov_max = defaultdict(lambda: 0.0)
 lines = []
 for country in countries:
-	with open("../DATA/2022_04_26/freq_traj_" + country.upper() + ".json",'r') as f:
-		freq_traj = json.load(f)
-	with open("../DATA/2022_04_26/multiplicities_" + country.upper() + ".json",'r') as f:
-		counts = json.load(f)
-	with open("../DATA/2022_04_26/multiplicities_Z_" + country.upper() + ".json",'r') as f:
+	with open("../DATA/2023_04_01/freq_traj_" + country.upper() + ".json",'r') as f:
+		freq_traj1 = json.load(f)
+		freq_traj = defaultdict(lambda:defaultdict(lambda: 0.0))
+		for voc in freq_traj1:
+			for time in freq_traj1[voc]:
+				freq_traj[voc][time] = freq_traj1[voc][time]
+	with open("../DATA/2023_04_01/multiplicities_" + country.upper() + ".json",'r') as f:
+		counts1 = json.load(f)
+		counts = defaultdict(lambda:defaultdict(lambda: -np.inf))
+		for voc in counts1:
+			for time in counts1[voc]:
+				counts[voc][time] = counts1[voc][time]
+
+	with open("../DATA/2023_04_01/multiplicities_Z_" + country.upper() + ".json",'r') as f:
 		Z = json.load(f)
 
 	meta_country= meta_df.loc[list(meta_df['location'] == country[0] + country[1:].lower())]
@@ -67,13 +100,28 @@ for country in countries:
 	if country == 'SOUTHAFRICA':
 		meta_country= meta_df.loc[list(meta_df['location'] == 'SouthAfrica')]
 	meta_country.index = meta_country['FLAI_time']
-	if len(meta_country) < 5:
-		print(f"No metadata for {country}")
-		continue
 
-	if max(list(freq_traj['DELTA'].values())) > 0.5 and max(list(freq_traj['OMICRON'].values())) > 0.5:
-		dates_delta = list(counts['DELTA'].keys())
-		dates_omi = list(counts['OMICRON'].keys())
+	for t, freq in freq_traj[pango2flupredict['BA.1']].items():
+		freq_traj[pango2flupredict['OMICRON']][t] += freq
+	for t, freq in freq_traj[pango2flupredict['BA.1.1']].items():
+		freq_traj[pango2flupredict['OMICRON']][t] += freq
+	for t, freq in freq_traj[pango2flupredict['BA.2']].items():
+		freq_traj[pango2flupredict['OMICRON']][t] += freq
+	for t, freq in freq_traj[pango2flupredict['BA.2.12.1']].items():
+		freq_traj[pango2flupredict['OMICRON']][t] += freq
+
+	for t, count in counts[pango2flupredict['BA.1']].items():
+		counts[pango2flupredict['OMICRON']][t] =  util_functions.logSum([counts[pango2flupredict['OMICRON']][t], count])
+	for t, count in counts[pango2flupredict['BA.1.1']].items():
+		counts[pango2flupredict['OMICRON']][t] = util_functions.logSum([counts[pango2flupredict['OMICRON']][t], count])
+	for t, count in counts[pango2flupredict['BA.2']].items():
+		counts[pango2flupredict['OMICRON']][t] = util_functions.logSum([counts[pango2flupredict['OMICRON']][t], count])
+	for t, count in counts[pango2flupredict['BA.2.12.1']].items():
+		counts[pango2flupredict['OMICRON']][t] = util_functions.logSum([counts[pango2flupredict['OMICRON']][t], count])
+
+	if max(list(freq_traj[pango2flupredict['DELTA']].values())) > 0.5 and max(list(freq_traj[pango2flupredict['OMICRON']].values())) > 0.5:
+		dates_delta = list(counts[pango2flupredict['DELTA']].keys())
+		dates_omi = list(counts[pango2flupredict['OMICRON']].keys())
 		dates_delta = [int(a) for a in dates_delta]
 		dates_omi = [int(a) for a in dates_omi]
 		dates_delta = sorted(dates_delta)
@@ -83,8 +131,8 @@ for country in countries:
 		tmin = min(set(dates_delta).intersection(set(dates_omi)))
 		tmax = max(set(dates_delta).intersection(set(dates_omi)))
 		t_range = np.arange(tmin,tmax)
-		omi_count = [int(np.exp(counts['OMICRON'][str(a)])) for a in t_range]
-		delta_count = [int(np.exp(counts['DELTA'][str(a)])) for a in t_range]
+		omi_count = [int(np.exp(counts[pango2flupredict['OMICRON']][str(a)])) for a in t_range]
+		delta_count = [int(np.exp(counts[pango2flupredict['DELTA']][str(a)])) for a in t_range]
 		N_tot = np.array(omi_count) + np.array(delta_count)
 		check = 'not_okay'
 		for t in t_range:
@@ -105,7 +153,7 @@ for country in countries:
 		tmax = tmaxnew
 		t_range= np.arange(tmin,tmax)
 
-		Ztot =np.array([int(np.exp(Z[str(t)])) for t in t_range])
+		Ztot = np.array([int(np.exp(Z[str(int(t))])) for t in np.arange(Time.dateToCoordinate("2021-04-01"), Time.dateToCoordinate("2022-09-01"))])
 		country_min_count[country].append(min(Ztot))
 		if np.sum(Ztot > min_count) != len(Ztot):
 			print(f"{country} drops due to insufficient count")
@@ -122,22 +170,27 @@ for country in countries:
 			boosterp = clean_vac(list(meta_country.index), booster)
 		country2immuno2time[country]['BOOST'] = {list(meta_country.index)[i]:boosterp[i] for i in range(len(list(meta_country.index)))}
 		cases_full = [meta_country.loc[t]['new_cases']/meta_country.loc[t]['population'] for t in list(meta_country.index)]
-		cases_full = clean_vac(list(meta_country.index),cases_full)
+		if country in ['NY','CA']:
+			for i in range(0, len(cases_full)-1,7):
+				week = cases_full[i] / 7
+				cases_full[i:i+7] = np.ones(7) * week
+		else:
+			cases_full = clean_vac(list(meta_country.index),cases_full)
 		country2immuno2time[country]['CASES'] = {list(meta_country.index)[i]:cases_full[i] for i in range(len(list(meta_country.index)))}
 		recov_tot = [[np.sum(cases_full[0:t-list(meta_country.index)[0]]), t] for t in list(meta_country.index)]
 		country2immuno2time[country]['RECOV_TOT'] = {a[1]: a[0] for a in recov_tot}
-		ytot = country2immuno2time[country]['RECOV_TOT'][Time.dateToCoordinate("2022-01-01")]
-
+		ytot = country2immuno2time[country]['RECOV_TOT'][Time.dateToCoordinate("2022-02-01")]
+		country2recov_max[country] = ytot
 
 		x_delta = []
 		x_omi = []
 		for t in list(meta_country.index):
-			if str(t) in freq_traj['DELTA'].keys():
-				x_delta.append(freq_traj['DELTA'][str(t)])
+			if str(t) in freq_traj[pango2flupredict['DELTA']].keys():
+				x_delta.append(freq_traj[pango2flupredict['DELTA']][str(t)])
 			else:
 				x_delta.append(0.0)
-			if str(t) in freq_traj['OMICRON'].keys() and t > Time.dateToCoordinate("2021-10-01"):
-				x_omi.append(freq_traj['OMICRON'][str(t)])
+			if str(t) in freq_traj[pango2flupredict['OMICRON']].keys() and t > Time.dateToCoordinate("2021-10-01"):
+				x_omi.append(freq_traj[pango2flupredict['OMICRON']][str(t)])
 			else:
 				x_omi.append(0.0)
 		freq_delta = np.array(x_delta)
@@ -151,8 +204,8 @@ for country in countries:
 		recov_omi = [[np.sum(cases_full_omi[0:t-list(meta_country.index)[0]]), t] for t in list(meta_country.index)]
 		country2immuno2time[country]['RECOV_OMI_0'] = {a[1]: a[0] for a in recov_omi}
 
-		omi_count = [int(np.exp(counts['OMICRON'][str(a)])) for a in t_range]
-		delta_count = [int(np.exp(counts['DELTA'][str(a)])) for a in t_range]
+		omi_count = [int(np.exp(counts[pango2flupredict['OMICRON']][str(a)])) for a in t_range]
+		delta_count = [int(np.exp(counts[pango2flupredict['DELTA']][str(a)])) for a in t_range]
 		
 		t1 = 0 
 		t2 = int(t1 + dt)
@@ -198,12 +251,12 @@ for country in countries:
 			delta_recov = np.mean([country2immuno2time[country]['RECOV_DELTA_0'][int(t)] for t in t_range_here])
 			omi_recov = np.mean([country2immuno2time[country]['RECOV_OMI_0'][int(t)] for t in t_range_here])
 
-			if str(FLAI_time) in freq_traj['DELTA'].keys():
-				x_delta = freq_traj['DELTA'][str(FLAI_time)]
+			if str(FLAI_time) in freq_traj[pango2flupredict['DELTA']].keys():
+				x_delta = freq_traj[pango2flupredict['DELTA']][str(FLAI_time)]
 			else:
 				x_delta= 0.0
-			if str(FLAI_time) in freq_traj['OMICRON'].keys():
-				x_omi = freq_traj['OMICRON'][str(FLAI_time)]
+			if str(FLAI_time) in freq_traj[pango2flupredict['OMICRON']].keys():
+				x_omi = freq_traj[pango2flupredict['OMICRON']][str(FLAI_time)]
 			else:
 				x_omi = 0.0
 			
@@ -229,11 +282,11 @@ lines = lines.loc[mask]
 
 a = []
 for country in list(set(lines.country)):
-	a.append([country,max(lines.loc[lines.country == country, 'omi_recov'])])
+	a.append([country,country2recov_max[country]])
 a = pd.DataFrame(a, columns=['country','y_0'])
-country2pop = list(a.loc[a.y_0 < 0.01,'country'])
+country2pop = list(a.loc[a.y_0 < 0.05,'country'])
 for c in country2pop:
-	print(f"Popped {c} bc y< 0.01")
+	print(f"Popped {c} bc y< 0.05")
 mask = [c not in country2pop for c in list(lines.country)]
 lines = lines.loc[mask]
 savename='../output/s_hat_omi_delta.txt'
