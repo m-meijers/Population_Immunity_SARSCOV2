@@ -2,7 +2,9 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 from collections import defaultdict
-from flai.util.Time import Time
+import sys
+sys.path.insert(0,"..")
+from util.time import Time
 from sklearn import linear_model
 from matplotlib.lines import Line2D
 import scipy.stats as ss

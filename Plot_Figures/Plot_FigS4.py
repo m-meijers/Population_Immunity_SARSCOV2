@@ -14,7 +14,9 @@ import matplotlib as mpl
 import matplotlib.gridspec as gridspec
 from matplotlib.lines import Line2D
 import scipy.integrate as integrate
-from flai.util.Time import Time
+import sys
+sys.path.insert(0,"..")
+from util.time import Time
 
 
 color_list = [(76,109,166),(215,139,45),(125,165,38),(228,75,41),(116,97,164),(182,90,36),(80,141,188),(246,181,56),(125,64,119),(158,248,72)]

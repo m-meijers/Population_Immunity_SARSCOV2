@@ -14,7 +14,9 @@ import matplotlib as mpl
 import matplotlib.gridspec as gridspec
 from matplotlib.lines import Line2D
 import scipy.integrate as integrate
-from flai.util.Time import Time
+import sys
+sys.path.insert(0,"..")
+from util.time import Time
 
 flupredict2color={ "1": "#004E98" ,
          "1C.2A.3A.4B": "#872853",

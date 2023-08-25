@@ -1,7 +1,9 @@
+import sys
+sys.path.insert(0,"..")
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
-from flai.util.Time import Time
+from util.time import Time
 import json
 from matplotlib.lines import Line2D
 from scipy.interpolate import interp1d

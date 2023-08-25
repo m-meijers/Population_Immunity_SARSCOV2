@@ -7,7 +7,9 @@ import scipy.integrate as si
 import scipy.stats as ss
 import scipy.optimize as so
 import json
-from flai.util.Time import Time
+import sys
+sys.path.insert(0,"..")
+from util.time import Time
 from scipy.interpolate import interp1d
 import matplotlib.gridspec as gridspec
 import matplotlib as mpl

@@ -1,7 +1,9 @@
 import pandas as pd 
 import numpy as np
 import matplotlib.pyplot as plt
-from flai.util.Time import Time
+import sys
+sys.path.insert(0,"..")
+from util.time import Time
 import json
 from matplotlib.lines import Line2D
 from scipy.optimize import curve_fit

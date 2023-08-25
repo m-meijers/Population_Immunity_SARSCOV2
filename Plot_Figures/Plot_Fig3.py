@@ -14,7 +14,9 @@ import matplotlib as mpl
 import matplotlib.gridspec as gridspec
 from matplotlib.lines import Line2D
 import scipy.integrate as integrate
-from flai.util.Time import Time
+import sys
+sys.path.insert(0,"..")
+from util.time import Time
 
 pd.options.mode.chained_assignment = None  # default='warn'
 

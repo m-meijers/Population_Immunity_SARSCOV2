@@ -1,3 +1,6 @@
+import sys
+sys.path.insert(0,"..")
+from util.time import Time
 import pandas as pd 
 import numpy as np
 import matplotlib.pyplot as plt
