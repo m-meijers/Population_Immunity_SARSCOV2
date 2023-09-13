@@ -172,9 +172,6 @@ for country in countries:
 
     N_tot = np.array(bq1_count) + np.array(ba45_count)
 
-            # #         ================================================
-        # # figure
-
     ba45_freq = ba45_count / N_tot
     bq1_freq = bq1_count / N_tot
 
@@ -197,7 +194,6 @@ for country in countries:
         if bq1_count[t1] < 10 or bq1_count[t2] < 10 or ba45_count[t1] < 10 or ba45_count[t2] < 10:
             t1 = t1 + 7
             t2 = int(t1 + dt)
-            print(f"Small count single point in {country}")
             continue
         p_t1 = [bq1_count[t1] / N_tot1, ba45_count[t1] / N_tot1]
         p_t2 = [bq1_count[t2] / N_tot2, ba45_count[t2] / N_tot2]

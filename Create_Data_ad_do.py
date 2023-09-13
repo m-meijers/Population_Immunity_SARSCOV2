@@ -96,9 +96,7 @@ countries = sorted(list(set(countries)))
 country2immuno2time = defaultdict(lambda:defaultdict(lambda:defaultdict(lambda: 0.0)))
 country2immuno2time_bivalent = defaultdict(lambda:defaultdict(lambda:defaultdict(lambda: 0.0)))
 for country in countries:
-# for country in ['Netherlands']:
 	x_limit = 0.01
-	# country = 'ITALY'
 	with open("DATA/2022_04_26/freq_traj_" + country.upper() + ".json",'r') as f:
 		freq_traj = json.load(f)
 	with open("DATA/2022_04_26/multiplicities_" + country.upper() + ".json",'r') as f:
@@ -134,8 +132,6 @@ for country in countries:
 			else:
 				country2immuno2time[country][time_meas][t] = country2immuno2time[country]['VAC'][t] - country2immuno2time[country]['BOOST'][time_meas]
 
-
-
 	x_delta = []
 	x_omi = []
 	x_alpha = []
@@ -154,7 +150,6 @@ for country in countries:
 				x_vocs.append(freq_traj[voc][str(t)])
 			else:
 				x_vocs.append(0.0)
-		# x_vocs[all_vocs.index("BA.1")] -= x_vocs[all_vocs.index("BA.1.1")]
 		x_vocs[all_vocs.index("BA.2")] -= x_vocs[all_vocs.index("BJ.1")]
 		x_vocs[all_vocs.index("BA.2")] -= x_vocs[all_vocs.index("BA.2.75")]
 		x_vocs[all_vocs.index("BA.2")] -= x_vocs[all_vocs.index("XBB")]
@@ -163,7 +158,6 @@ for country in countries:
 		x_vocs[all_vocs.index("BA.5")] -= x_vocs[all_vocs.index("BF.7")]
 		x_vocs[all_vocs.index("BA.5")] -= x_vocs[all_vocs.index("BQ.1")]
 		x_vocs[all_vocs.index("BQ.1")] -= x_vocs[all_vocs.index("BQ.1.1")]
-		# x_vocs[all_vocs.index("BA.2.75")] -= x_vocs[all_vocs.index("BA.2.75.2")]
 		x_vocs[all_vocs.index("BA.2.75")] -= x_vocs[all_vocs.index("BM.1.1")]
 		x_vocs[all_vocs.index("BA.2.75")] -= x_vocs[all_vocs.index("BN.1")]
 		x_vocs[all_vocs.index("BA.2.75")] -= x_vocs[all_vocs.index("CH.1")]

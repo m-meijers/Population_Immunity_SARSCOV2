@@ -175,7 +175,7 @@ for country in countries:
     N_tot = np.array(ba2_count) + np.array(ba45_count)
 
     Ztot =np.array([int(np.exp(Z[str(t)])) for t in t_range])
-    print(f"{country}, {min(Ztot)}")
+    # print(f"{country}, {min(Ztot)}")
     country_min_count[country].append(min(Ztot))
     if np.sum(Ztot > min_count) != len(Ztot):
         print(country)
