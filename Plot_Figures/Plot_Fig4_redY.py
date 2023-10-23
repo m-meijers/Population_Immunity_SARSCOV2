@@ -2,54 +2,44 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import json
-import seaborn as sns
-import scipy.stats as ss
-import scipy
 from collections import defaultdict
 import time
-from scipy.optimize import minimize
-import scipy.integrate as si
-import copy
-import matplotlib as mpl
-import matplotlib.gridspec as gridspec
 from matplotlib.lines import Line2D
-import scipy.integrate as integrate
 import sys
-sys.path.insert(0,"..")
 from util.time import Time
-from scipy import stats as ss
-from sklearn.linear_model import LinearRegression as LR
+
+sys.path.insert(0, "..")
 
 pd.options.mode.chained_assignment = None  # default='warn'
 
-WHOlabels = {
-'1C.2A.3A.4B':'BETA',
-'1C.2A.3A.4A':'EPSILON',
-'1C.2A.3A.4C':'IOTA',
-'1C.2A.3I':'MU',
-'1C.2B.3D':'ALPHA',
-'1C.2B.3J':'OMICRON',
-'1C.2B.3J.4D':'BA.1',
-'1C.2B.3J.4D.5A':'BA.1.1',
-'1C.2B.3J.4E':'BA.2',
-'1C.2B.3J.4E.5L':'BJ.1',
-'1C.2B.3J.4E.5C':'BA.2.75',
-'1C.2B.3J.4E.5C.6A':'BA.2.75.2',
-'1C.2B.3J.4E.5C.6E':'BM.1.1',
-'1C.2B.3J.4E.5C.6F':'BN.1',
-'1C.2B.3J.4F':'BA.4',
-'1C.2B.3J.4F.5D':'BA.4.6',
-'1C.2B.3J.4G':'BA.5',
-'1C.2B.3J.4G.5K':'BA.5.9',
-'1C.2B.3J.4G.5E':'BF.7',
-'1C.2B.3J.4G.5F':'BQ.1',
-'1C.2B.3J.4G.5F.6B':'BQ.1.1',
-'1C.2D.3F':'DELTA',
-'1C.2B.3G':'GAMMA',
-'1C.2B.3J.4E.5N':'XBB',
-'1C.2B.3J.4E.5N.6J':'XBB.1.5',
-'1C.2B.3J.4E.5C.6I':'CH.1',
-'1C.2B.3J.4E.5C.6I.7C':'CH.1.1'}
+WHOlabels = {'1C.2A.3A.4B': 'BETA',
+             '1C.2A.3A.4A': 'EPSILON',
+             '1C.2A.3A.4C': 'IOTA',
+             '1C.2A.3I': 'MU',
+             '1C.2B.3D': 'ALPHA',
+             '1C.2B.3J': 'OMICRON',
+             '1C.2B.3J.4D': 'BA.1',
+             '1C.2B.3J.4D.5A': 'BA.1.1',
+             '1C.2B.3J.4E': 'BA.2',
+             '1C.2B.3J.4E.5B': 'BA.2.12.1',
+             '1C.2B.3J.4E.5L': 'BJ.1',
+             '1C.2B.3J.4E.5C': 'BA.2.75',
+             '1C.2B.3J.4E.5C.6A': 'BA.2.75.2',
+             '1C.2B.3J.4E.5C.6E': 'BM.1.1',
+             '1C.2B.3J.4E.5C.6F': 'BN.1',
+             '1C.2B.3J.4F': 'BA.4',
+             '1C.2B.3J.4F.5D': 'BA.4.6',
+             '1C.2B.3J.4G': 'BA.5',
+             '1C.2B.3J.4G.5K': 'BA.5.9',
+             '1C.2B.3J.4G.5E': 'BF.7',
+             '1C.2B.3J.4G.5F': 'BQ.1',
+             '1C.2B.3J.4G.5F.6B': 'BQ.1.1',
+             '1C.2D.3F': 'DELTA',
+             '1C.2B.3G': 'GAMMA',
+             '1C.2B.3J.4E.5N': 'XBB',
+             '1C.2B.3J.4E.5N.6J': 'XBB.1.5',
+             '1C.2B.3J.4E.5C.6I': 'CH.1',
+             '1C.2B.3J.4E.5C.6I.7C': 'CH.1.1'}
 pango2flupredict = {a:b for b,a in WHOlabels.items()}
 
 df = pd.read_csv("../output/data_immune_trajectories.txt",'\t',index_col=False)
